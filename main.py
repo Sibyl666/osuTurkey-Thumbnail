@@ -156,7 +156,7 @@ def main():
     with open("text.txt", "w", encoding="utf-8") as file:
         file.write(f"""
 # Title
-{userInfo["username"]} - {beatmapInfo["title"]} [{beatmapInfo["version"]}] {acc}%{mods} {replayInfo.max_combo}x {pp}{"pp" if scoreInfo["pp"] else ""}
+{userInfo["username"]} - {beatmapInfo["title"]} [{beatmapInfo["version"]}] {acc}%{mods} {replayInfo.max_combo}x {pp}{"pp" if scoreInfo["pp"] else "pp if ranked"}
 
 # Description
 Oyuncu: https://osu.ppy.sh/users/{userInfo["user_id"]}
