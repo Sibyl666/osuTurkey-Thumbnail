@@ -79,6 +79,11 @@ def writeText(image: Image, fontSize: int, text: str, xy: tuple = (0, 0), anchor
     return image
 
 
+def getTextSize(text: str, fontSize: int) -> tuple:
+    font = ImageFont.truetype("Stuff/Gothic.ttf", fontSize)
+    return font.getsize(text)
+
+
 def main():
     replayInfo = ReplayParser(sys.argv[1])
 
@@ -111,12 +116,12 @@ def main():
     beatmapInfo["titleWrapped"] = "\n".join(textwrap.wrap(beatmapInfo["title"], 25))
     template = writeText(template, 200, beatmapInfo["titleWrapped"], center=True, fill=(255, 255, 255))
 
+
     # Play Stats
     # 228, 330
-
     acc = f'{replayInfo.acc:.2f}'
-    template = writeText(template, 180, acc, (220, 390))
-    template = writeText(template, 180, str(replayInfo.max_combo), (900, 390))
+    template = writeText(template, 180, acc, (1280, 390))
+    template = writeText(template, 180, str(replayInfo.max_combo), (1980, 390))
 
     scoreInfo = getScore(userInfo["username"], replayInfo.mods, beatmapInfo["beatmap_id"])
 
@@ -129,8 +134,11 @@ def main():
         pp = f'{int(float(scoreInfo["pp"]))}'
     else:
         pp = f"{int(ezpp_pp(ez))}"
+        
+        ppValueWidth, _ = getTextSize(pp, 180)
+        template = writeText(template, 60, "worth", (2790, 273))
 
-    template = writeText(template, 180, pp, (1590, 390))
+    template = writeText(template, 180, pp, (2684, 390))
 
     # Mods 
     # 404, 238
