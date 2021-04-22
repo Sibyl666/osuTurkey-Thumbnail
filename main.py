@@ -160,9 +160,9 @@ def main():
 
 # Description
 Oyuncu: https://osu.ppy.sh/users/{userInfo["user_id"]}
-Harita: https://osu.ppy.sh/beatmapsets/{beatmapInfo["beatmapset_id"]}#osu/{beatmapInfo["beatmap_id"]}
+Beatmap: https://osu.ppy.sh/beatmapsets/{beatmapInfo["beatmapset_id"]}#osu/{beatmapInfo["beatmap_id"]}
 Skin: 
-        """)
+""")
 
 
 if "__main__" == __name__:
