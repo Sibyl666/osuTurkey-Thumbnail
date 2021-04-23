@@ -56,11 +56,11 @@ def getCover(beatmapsetId: int) -> Image:
     return Image.open(BytesIO(response.content))
 
 
-def getAvatar(userId: int) -> Image:
+def getAvatar(userId: int, size: tuple = (222, 222)) -> Image:
     response = requests.get(f"https://a.ppy.sh/{userId}")
     avatarImage = Image.open(BytesIO(response.content)).convert("RGBA")
 
-    return cropped_thumbnail(avatarImage, (222, 222))
+    return cropped_thumbnail(avatarImage, size)
 
 
 def writeText(image: Image, fontSize: int, text: str, xy: tuple = (0, 0), anchor: str = "lm", fill: tuple = (0, 0, 0),
@@ -87,81 +87,76 @@ def getTextSize(text: str, fontSize: int) -> tuple:
 def main():
     replayInfo = ReplayParser(sys.argv[1])
 
-    # Initialize pp calculator
-    ez = ezpp_new()
-    ezpp_set_autocalc(ez, 1)
-
     beatmapInfo = getBeatmapFromMd5(replayInfo.beatmap_md5)
-    beatmapBytes = getBeatmapFile(beatmapInfo['beatmap_id'])
-    userInfo = getUserFromUsername(replayInfo.player_name)
     cover = cropped_thumbnail(getCover(beatmapInfo["beatmapset_id"]), (3200, 1800))
 
-    ezpp_data_dup(ez, beatmapBytes.decode('utf-8'), len(beatmapBytes))  # Load beatmap into pp calc
-
     template = Image.new("RGBA", (3200, 1800), color=("#ffffff"))
-    templateMask = Image.open("Stuff/Masks/TemplateMask.png").convert("RGBA")
+    templateMask = Image.open("Stuff/Masks/vsMask.png").convert("RGBA")
     avatarMask = Image.open("Stuff/Masks/AvatarMask.png").convert("L")
 
     template.paste(cover)
     template.paste(templateMask, (0, 0), templateMask)
 
+    ######################################## First Player
+
+    userInfo = getUserFromUsername(input("First username (Change spaces with '_'): "))
+    userInfoSecond = getUserFromUsername(input("Second username (Change spaces with '_'): "))
+
     # Avatar
-    avatar = getAvatar(userInfo["user_id"])
-    template.paste(avatar, (220, 1455), avatarMask)
+    avatar = getAvatar(userInfo["user_id"], (240, 240))
+    template.paste(avatar, (300, 980), avatarMask.resize((240, 240)))
 
     # Username
-    template = writeText(template, 140, userInfo["username"], (476, 1560))
+    template = writeText(template, 140, userInfo["username"], (580, 1100))
+
+    # Global
+    template = writeText(template, 70, "Global", (300, 1280))
+    template = writeText(template, 145, f"#{int(userInfo['pp_rank']):,}", (300, 1400))
+
+    # Country
+    template = writeText(template, 70, "Country", (300, 1520))
+    template = writeText(template, 145, f"#{int(userInfo['pp_country_rank']):,}", (300, 1640))
+
+    ########################################
+
+
+    ######################################## Second Player
+    avatar = getAvatar(userInfoSecond["user_id"], (240, 240))
+    template.paste(avatar, (1850, 980), avatarMask.resize((240, 240)))
+
+    # Username
+    template = writeText(template, 140, userInfoSecond["username"], (2140, 1100))
+
+    # Global
+    template = writeText(template, 70, "Global", (1850, 1280))
+    template = writeText(template, 145, f"#{int(userInfoSecond['pp_rank']):,}", (1850, 1400))
+
+    # Country
+    template = writeText(template, 70, "Country", (1850, 1520))
+    template = writeText(template, 145, f"#{int(userInfoSecond['pp_country_rank']):,}", (1850, 1640))
+    ########################################
 
     # Beatmap Title
     beatmapInfo["titleWrapped"] = "\n".join(textwrap.wrap(beatmapInfo["title"], 25))
-    template = writeText(template, 200, beatmapInfo["titleWrapped"], center=True, fill=(255, 255, 255))
+    template = writeText(template, 200, beatmapInfo["titleWrapped"], (1600, 500), "mm", fill=(255, 255, 255))
 
-
-    # Play Stats
-    # 228, 330
-    acc = f'{replayInfo.acc:.2f}'
-    template = writeText(template, 180, acc, (1280, 390))
-    template = writeText(template, 180, str(replayInfo.max_combo), (1980, 390))
-
-    scoreInfo = getScore(userInfo["username"], replayInfo.mods, beatmapInfo["beatmap_id"])
-
-    ezpp_set_mods(ez, replayInfo.mods)  # Set mods in pp calc
-    ezpp_set_accuracy(ez, replayInfo.count100, replayInfo.count50)
-    ezpp_set_nmiss(ez, replayInfo.count_miss)
-    ezpp_set_combo(ez, replayInfo.max_combo)
-
-    if scoreInfo["pp"]:
-        pp = f'{int(float(scoreInfo["pp"]))}'
-    else:
-        pp = f"{int(ezpp_pp(ez))}"
-        
-        ppValueWidth, _ = getTextSize(pp, 180)
-        template = writeText(template, 60, "worth", (2790, 273))
-
-    template = writeText(template, 180, pp, (2684, 390))
-
-    # Mods 
-    # 404, 238
-    xOffset = 2687
-    for mod in replayInfo.parsed_mods:
-        modImage = cropped_thumbnail(Image.open(f"Modicons/{mod}.png").convert("RGBA"), (404, 238))
-        template.paste(modImage, (xOffset, 1450), modImage)
-
-        xOffset -= 450
 
     template.save("thumbnail.png")
-
-    mods = f" {''.join(replayInfo.parsed_mods)}" if replayInfo.parsed_mods else ""
 
     with open("text.txt", "w", encoding="utf-8") as file:
         file.write(f"""
 # Title
-{userInfo["username"]} - {beatmapInfo["title"]} [{beatmapInfo["version"]}] {acc}%{mods} {replayInfo.max_combo}x {pp}{"pp" if scoreInfo["pp"] else "pp if ranked"}
+{userInfo["username"]} & {userInfoSecond["username"]} - {beatmapInfo["title"]} [{beatmapInfo["version"]}]
 
 # Description
+
 Oyuncu: https://osu.ppy.sh/users/{userInfo["user_id"]}
+Skin:
+
+Oyuncu 2: https://osu.ppy.sh/users/{userInfoSecond["user_id"]}
+Skin 2: 
+
 Beatmap: https://osu.ppy.sh/beatmapsets/{beatmapInfo["beatmapset_id"]}#osu/{beatmapInfo["beatmap_id"]}
-Skin: 
 """)
 
 
